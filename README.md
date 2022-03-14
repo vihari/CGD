@@ -1,5 +1,5 @@
 # CGD: A simple algotihm for robustness to sub-population shifts   
-**Under review at ICLR 2022**   
+Implementation of Common Gradient Descent algorithm published at ICLR 2022 (https://openreview.net/forum?id=irARV_2VFs4)
 
 ## Instructions for running    
 The code is built on [WILDS codebase v1.2.2](https://github.com/p-lambda/wilds/releases/tag/v1.2.2) and run on TPU v3-8. For efficiency, we only release the algorithm files and detail the minimal edits to be made on the WILDS codebase below. 
