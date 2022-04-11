@@ -3,10 +3,8 @@ import math
 import tqdm
 from algorithms.single_model_algorithm import SingleModelAlgorithm
 from models.initializer import initialize_model
-from configs import tpu_utils
 
 class CG(SingleModelAlgorithm):
-# metacg-old.py
     def __init__(self, config, d_out, grouper, loss, metric, n_train_steps, is_group_in_train, group_info):
         # initialize model
         model = initialize_model(config, d_out).to(config.device)
@@ -72,7 +70,6 @@ class CG(SingleModelAlgorithm):
             return_dict=False)
                 
         loss = group_losses @ self.rwt
-        tpu_utils.mark_step()
         return loss
 
     def _params(self):
@@ -129,7 +126,6 @@ class CG(SingleModelAlgorithm):
         params = self._params()
         all_grads = [None]*self.num_groups
         for li in range(self.num_groups):
-            tpu_utils.mark_step()
             all_grads[li] = torch.autograd.grad(group_losses[li], params, retain_graph=True)
             assert all_grads[li] is not None
         
@@ -156,10 +152,7 @@ class CG(SingleModelAlgorithm):
         self.rwt *= self.alpha.data
         self.rwt = self.rwt/self.rwt.sum()
         self.rwt = torch.clamp(self.rwt, min=1e-5)
-
-#         print (repr((RTG).cpu().numpy()), repr((RTG @ self.wts).cpu().numpy()), self.wts.cpu().numpy(), self.alpha.data.cpu().numpy(), self.rwt.cpu().numpy(), group_losses.detach().cpu().numpy())
             
-        tpu_utils.mark_step()
         results['group_alpha'] = self.rwt.detach().cpu()
         # update model
         super()._update(results)
