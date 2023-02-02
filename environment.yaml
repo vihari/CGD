@@ -54,4 +54,3 @@ dependencies:
     - transformers==4.26.0
     - typing-extensions==4.4.0
     - urllib3==1.26.14
-prefix: /homes/vp421/miniconda3/envs/new-torch
