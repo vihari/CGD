@@ -1,6 +1,11 @@
 # CGD: A simple algotihm for robustness to sub-population shifts   
 Implementation of Common Gradient Descent algorithm published at ICLR 2022 (https://openreview.net/forum?id=irARV_2VFs4)
 
+## Dependencies
+All the packages are documented in the `environment.yaml` file. Create a new conda env for reproducing results using the following command.
+
+`conda env create --file environment.yaml`
+
 ## Instructions for running    
 The code is built on [WILDS codebase v1.2.2](https://github.com/p-lambda/wilds/releases/tag/v1.2.2) and run on TPU v3-8. For efficiency, we only release the algorithm files and detail the minimal edits to be made on the WILDS codebase below. 
 
@@ -8,12 +13,15 @@ The code is built on [WILDS codebase v1.2.2](https://github.com/p-lambda/wilds/r
 2. Edit `examples/algorithms/initializer.py` to add an import and initialization line as follows:   
 ```python
   from algorithms.CG import CG
+  import numpy as np
   .....
-  .....
-  elif config.algorithm.startswith('CG'):
+    elif config.algorithm.startswith('CG'):
       train_g = train_grouper.metadata_to_group(train_dataset.metadata_array)
       is_group_in_train = get_counts(train_g, train_grouper.n_groups) > 0
-      groups, g_counts = np.unique(train_g, return_counts=True)
+      groups, u_counts = np.unique(train_g, return_counts=True)
+      g_counts = np.zeros(train_grouper.n_groups)
+      g_counts[groups] = u_counts
+
       alg = CG
       algorithm = alg(
           config=config,
@@ -26,7 +34,7 @@ The code is built on [WILDS codebase v1.2.2](https://github.com/p-lambda/wilds/r
           group_info=[groups, g_counts]
       )
 ```
-3. Add default configuration of the algorithms to `configs/algorithm.py` such as the following:
+3. Add default configuration of the algorithms to `examples/configs/algorithm.py` such as the following:
 ```python
    'CG': {
         'train_loader': 'standard',
