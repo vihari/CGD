@@ -19,28 +19,26 @@ class CG(SingleModelAlgorithm):
         )
         self.logged_fields.append('group_alpha')
         
-        # step size
-        self.rho = config.metacg_rho
         self.outer_lr = config.lr
-        
+
+        self.device = config.device
         self.C = config.cg_C
         _, self.g_counts = group_info
         self.g_counts = torch.tensor(self.g_counts, device=self.device, dtype=torch.float32)
-        wts = torch.exp(self.C/torch.sqrt(self.g_counts))
+        wts, self.adj_wts = torch.zeros_like(self.g_counts), torch.zeros_like(self.g_counts)
+        wts[self.g_counts>0] = torch.exp(self.C/torch.sqrt(self.g_counts[self.g_counts>0]))
         self.wts = wts/wts.sum()
-        self.adj_wts = self.C/torch.sqrt(self.g_counts)
+        self.adj_wts[self.g_counts>0] = self.C/torch.sqrt(self.g_counts[self.g_counts>0])
         print ("Using up-weight: ", self.wts.cpu().numpy())
         print ("Using adj-weight: ", self.adj_wts.cpu().numpy())
         
         self.config = config
         self.batch_size = config.batch_size
-        self.device = config.device
         self.num_groups = grouper.n_groups
         self.alpha = torch.autograd.Variable(torch.ones(self.num_groups, device=self.device)*(1./self.num_groups), requires_grad=True)
         self.lmbda = torch.autograd.Variable(torch.zeros(self.num_groups, device=self.device), requires_grad=True)
         self.rwt = torch.autograd.Variable(self.wts.clone(), requires_grad=False)
         self.step_size = config.cg_step_size
-        self.rloss = torch.zeros_like(self.g_counts)
 
     def process_batch(self, batch):
         """
@@ -57,7 +55,7 @@ class CG(SingleModelAlgorithm):
               all Tensors are of size (batch_size,)
         """
         results = super().process_batch(batch)
-        results['group_alpha'] = self.alpha.detach().cpu()
+        results['group_alpha'] = self.alpha.detach()
         return results
 
     def objective(self, results):
@@ -153,6 +151,6 @@ class CG(SingleModelAlgorithm):
         self.rwt = self.rwt/self.rwt.sum()
         self.rwt = torch.clamp(self.rwt, min=1e-5)
             
-        results['group_alpha'] = self.rwt.detach().cpu()
+        results['group_alpha'] = self.rwt.detach()
         # update model
         super()._update(results)
